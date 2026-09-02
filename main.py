@@ -46,14 +46,11 @@ try:
 
         answer = None
         try:
-            # common shape
             answer = response.choices[0].message.content
         except Exception:
             try:
                 ch = response.choices[0]
-                # dict-like choice
                 if isinstance(ch, dict):
-                    # new APIs sometimes use {'message': {'content': [{'type':'output_text','text':'...'}]}}
                     msg = ch.get("message") or {}
                     if isinstance(msg, dict):
                         c = msg.get("content")
@@ -66,15 +63,12 @@ try:
                         else:
                             answer = str(c)
                     else:
-                        # fallback to text field or full dict
                         answer = ch.get("text") or str(ch)
                 else:
-                    # object with text attr
                     answer = getattr(ch, "text", None) or str(ch)
             except Exception:
                 answer = None
 
-        # If no answer extracted, show raw response for debugging
         if not answer:
             debug = os.getenv("DEBUG", "0")
             raw = repr(response)
@@ -85,4 +79,4 @@ try:
         else:
             print("Bot:", answer)
 except KeyboardInterrupt:
-    print("\nBot: Goodbye!")
+    print("\nBot: todaloo!")
