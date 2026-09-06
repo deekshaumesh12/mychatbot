@@ -28,7 +28,7 @@ try:
         if not user_input:
             continue
         if user_input.lower() == "exit":
-            print("Bot: Goodbye!")
+            print("Bot: todaloo!")
             break
 
         try:
@@ -79,4 +79,4 @@ try:
         else:
             print("Bot:", answer)
 except KeyboardInterrupt:
-    print("\nBot: todaloo!")
+    print("\nBot: Goodbye!")
