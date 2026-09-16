@@ -2,20 +2,13 @@ import os
 
 import gradio as gr
 from dotenv import load_dotenv
-from openai import OpenAI
 
 load_dotenv()
 
-# Support both `openaiapikey` and older/alternate `openapikey` env var names.
-api_key = os.getenv("openaiapikey") or os.getenv("openapikey")
-if not api_key:
-    raise RuntimeError("openaiapikey not found. Add it to .env or your environment variables.")
-
-api_key = api_key.strip().strip('"').strip("'")
-model_name = os.getenv("MODEL", "openai/gpt-oss-20b:free")
+# This app no longer calls an external API. It uses a simple local responder
+# to make the UI work offline and avoid exposing API keys.
+model_name = os.getenv("MODEL", "local-demo")
 max_tokens = int(os.getenv("MAX_TOKENS", "256"))
-
-client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
 
 
 def build_messages(history, user_message):
@@ -37,22 +30,25 @@ def build_messages(history, user_message):
     return messages
 
 
+def local_response_logic(message, history):
+    # Very small local logic for demo purposes.
+    text = message.strip()
+    if not text:
+        return ""
+    lower = text.lower()
+    if "hello" in lower or "hi" in lower:
+        return "Hi there — this is a local Gradio demo (no external API)."
+    if "help" in lower:
+        return "Try typing a question or 'hello'. This is a local demo responder."
+    # otherwise echo back a concise acknowledgment
+    return f"(local) I received your message: {text}"
+
+
 def get_response(message, history):
     if not message or not message.strip():
         return ""
-
     try:
-        messages = build_messages(history, message)
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            max_tokens=max_tokens,
-        )
-
-        answer = response.choices[0].message.content
-        if answer is None:
-            return "I did not receive a valid reply from the model."
-        return answer
+        return local_response_logic(message, history)
     except Exception as exc:
         return f"Error: {exc}"
 
@@ -201,10 +197,26 @@ with gr.Blocks() as demo:
     clear.click(fn=lambda: ([], ""), inputs=None, outputs=[chatbot, textbox])
 
 if __name__ == "__main__":
-    preferred_port = int(os.getenv("GRADIO_SERVER_PORT", "7861"))
+    # Runtime settings (adjust here or via environment variables)
+    GRADIO_SERVER_PORT = int(os.getenv("GRADIO_SERVER_PORT", "7861"))
+    GRADIO_SERVER_NAME = os.getenv("GRADIO_SERVER_NAME", "127.0.0.1")
+    GRADIO_DEBUG = os.getenv("DEBUG", "1") in {"1", "true", "True"}
+
     try:
-        demo.launch(debug=True, share=False, server_name="127.0.0.1", server_port=preferred_port, css=css)
+        demo.launch(
+            debug=GRADIO_DEBUG,
+            share=False,
+            server_name=GRADIO_SERVER_NAME,
+            server_port=GRADIO_SERVER_PORT,
+            css=css,
+        )
     except OSError:
-        fallback_port = preferred_port + 1
-        print(f"Port {preferred_port} is busy. Retrying on {fallback_port}...")
-        demo.launch(debug=True, share=False, server_name="127.0.0.1", server_port=fallback_port, css=css)
+        fallback_port = GRADIO_SERVER_PORT + 1
+        print(f"Port {GRADIO_SERVER_PORT} is busy. Retrying on {fallback_port}...")
+        demo.launch(
+            debug=GRADIO_DEBUG,
+            share=False,
+            server_name=GRADIO_SERVER_NAME,
+            server_port=fallback_port,
+            css=css,
+        )
