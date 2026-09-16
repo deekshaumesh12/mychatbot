@@ -6,7 +6,8 @@ from openai import OpenAI
 
 load_dotenv()
 
-api_key = os.getenv("openaiapikey")
+# Support both `openaiapikey` and older/alternate `openapikey` env var names.
+api_key = os.getenv("openaiapikey") or os.getenv("openapikey")
 if not api_key:
     raise RuntimeError("openaiapikey not found. Add it to .env or your environment variables.")
 
